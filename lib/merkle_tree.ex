@@ -59,7 +59,7 @@ defmodule MerkleTree do
     starting_height = 0
     leaves = Enum.map(blocks, fn(block) ->
       %MerkleTree.Node{
-        value: hash_function.(block),
+        value: block,
         children: [],
         height: starting_height
       }
