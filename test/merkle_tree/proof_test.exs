@@ -6,7 +6,7 @@ defmodule MerkleTree.ProofTest do
 
   test "correct proofs" do
     blocks = ~w/a b c d e f g h/
-    tree = MerkleTree.new blocks
+    tree = MerkleTree.new(blocks, &MerkleTree.Crypto.sha256/1, 3)
 
     proofs = blocks
     |> Enum.with_index
@@ -22,7 +22,7 @@ defmodule MerkleTree.ProofTest do
   # TODO: remove when deprecated MerkleTree.Proof.proven?/3 support ends
   test "correct proofs with deprecated proven?/3" do
     blocks = ~w/a b c d e f g h/
-    tree = MerkleTree.new blocks
+    tree = MerkleTree.new(blocks, &MerkleTree.Crypto.sha256/1, 3)
 
     proofs = blocks
     |> Enum.with_index
@@ -35,10 +35,10 @@ defmodule MerkleTree.ProofTest do
     |> Enum.all?
   end
 
-  
+
   test "incorrect proof" do
     blocks = ~w/a b c d e f g h/
-    tree = MerkleTree.new blocks
+    tree = MerkleTree.new(blocks, &MerkleTree.Crypto.sha256/1, 3)
     %MerkleTree.Proof{hashes: hashes} = proof = prove(tree, 5)
 
     # test sanity
@@ -76,7 +76,7 @@ defmodule MerkleTree.ProofTest do
   # TODO: remove when deprecated MerkleTree.Proof.proven?/3 support ends
   test "incorrect proof with deprecated proven?/3" do
     blocks = ~w/a b c d e f g h/
-    tree = MerkleTree.new blocks
+    tree = MerkleTree.new(blocks, &MerkleTree.Crypto.sha256/1, 3)
     %MerkleTree.Proof{hashes: hashes} = proof = prove(tree, 5)
 
     # test sanity
