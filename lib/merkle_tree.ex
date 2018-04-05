@@ -45,7 +45,7 @@ defmodule MerkleTree do
     Alternatively, you can supply your own hash function that has the spec
     ``(String.t -> String.t)``.
   """
-  @spec new(blocks, height, hash_function) :: t
+  @spec new(blocks, hash_function, height) :: t
   def new(blocks, hash_function \\ &MerkleTree.Crypto.sha256/1, height \\ @default_height) do
     root = build(blocks, hash_function, height)
     blocks = blocks |> extend_with_zeroes(height)
