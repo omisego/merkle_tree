@@ -8,7 +8,7 @@ defmodule MerkleTree do
       ## Usage Example
 
       iex> MerkleTree.new(['a', 'b', 'c', 'd'], &MerkleTree.Crypto.sha256/1, 2)
-      %MerkleTree{blocks: ['a', 'b', 'c', 'd'], hash_function: &MerkleTree.Crypto.sha256/1,
+      {:ok, %MerkleTree{blocks: ['a', 'b', 'c', 'd'], hash_function: &MerkleTree.Crypto.sha256/1,
             root: %MerkleTree.Node{children: [%MerkleTree.Node{children: [%MerkleTree.Node{children: [], height: 0,
                  value: "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"},
                 %MerkleTree.Node{children: [], height: 0, value: "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"}], height: 1,
@@ -17,12 +17,11 @@ defmodule MerkleTree do
                  value: "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"},
                 %MerkleTree.Node{children: [], height: 0, value: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"}], height: 1,
                value: "d3a0f1c792ccf7f1708d5422696263e35755a86917ea76ef9242bd4a8cf4891a"}], height: 2,
-             value: "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd"}}
+             value: "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd"}}}
   """
 
   defstruct [:blocks, :root, :hash_function]
 
-  @number_of_children 2 # Number of children per node
   @default_height 16
   @zeroes <<0>> |> List.duplicate(32) |> Enum.join
 
@@ -45,11 +44,14 @@ defmodule MerkleTree do
     Alternatively, you can supply your own hash function that has the spec
     ``(String.t -> String.t)``.
   """
-  @spec new(blocks, hash_function, height) :: t
+  @spec new(blocks, hash_function, height) :: {:ok, t} | {:error, atom}
   def new(blocks, hash_function \\ &MerkleTree.Crypto.sha256/1, height \\ @default_height) do
-    root = build(blocks, hash_function, height)
-    blocks = blocks |> extend_with_zeroes(height)
-    %MerkleTree{blocks: blocks, hash_function: hash_function, root: root}
+    case build(blocks, hash_function, height) do
+      {:ok, root} ->
+        blocks = blocks |> extend_with_zeroes(height)
+        {:ok, %MerkleTree{blocks: blocks, hash_function: hash_function, root: root}}
+      error -> error
+    end
   end
 
   defp extend_with_zeroes(blocks, height) do
@@ -62,22 +64,6 @@ defmodule MerkleTree do
   @doc """
     Builds a new binary merkle tree.
   """
-  def build(blocks, hash_function, max_height) when blocks != [] do
-    height = 0
-    leaves = Enum.map(blocks, fn(block) ->
-      %MerkleTree.Node{
-        value: hash_function.(block),
-        children: [],
-        height: height
-      }
-    end)
-    extension_node = %MerkleTree.Node{
-      value: @zeroes,
-      children: [],
-      height: height
-    }
-    _build(leaves, hash_function, height, max_height, extension_node)
-  end
   def build([], hash_function, max_height) do
     height = 0
     extension_node = %MerkleTree.Node{
@@ -85,7 +71,27 @@ defmodule MerkleTree do
       children: [],
       height: height
     }
-    _build([extension_node], hash_function, height, max_height, extension_node)
+    {:ok, _build([extension_node], hash_function, height, max_height, extension_node)}
+  end
+  def build(blocks, hash_function, max_height) do
+    if Enum.count(blocks) > pow(max_height) do
+      {:error, :too_many_blocks}
+    else
+      height = 0
+      leaves = Enum.map(blocks, fn(block) ->
+        %MerkleTree.Node{
+          value: hash_function.(block),
+          children: [],
+          height: height
+        }
+      end)
+      extension_node = %MerkleTree.Node{
+        value: @zeroes,
+        children: [],
+        height: height
+      }
+      {:ok, _build(leaves, hash_function, height, max_height, extension_node)}
+    end
   end
 
   defp _build([root], _, height, max_height, _) when height == max_height, do: root # Base case
@@ -93,7 +99,7 @@ defmodule MerkleTree do
     {nodes, next_extension_node} = nodes |> extend_to_even_length(height, extension_node, hash_function)
     height = height + 1
 
-    children_partitions = Enum.chunk(nodes, @number_of_children)
+    children_partitions = Enum.chunk(nodes, 2)
     parents = Enum.map(children_partitions, fn(partition) ->
       concatenated_values = partition
         |> Enum.map(&(&1.value))

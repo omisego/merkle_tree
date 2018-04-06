@@ -9,6 +9,9 @@ Merkle Tree implementation in pure Elixir.
 ### [Hex (Package Manager)](http://hex.pm/packages/merkle_tree)
 ### [API Documentation](https://hexdocs.pm/merkle_tree/)
 
+## Compatibility Note
+This fork breaks API. MerkleTree.new accepts blocks that does not completely fill the last level of a tree of a given height. Last level is filled up with leaves which value is a sequence of 32 zero bytes. 
+
 ## Installation
 
 * Install the [Elixir](https://elixir-lang.org/) functional language.
@@ -41,7 +44,7 @@ Merkle Tree implementation in pure Elixir.
   ```elixir
   iex> MerkleTree.__info__(:functions)
   [__struct__: 0, __struct__: 1, build: 2, new: 1, new: 2]
-  iex> mt = MerkleTree.new(['a', 'b', 'c', 'd'], &MerkleTree.Crypto.sha256/1, 2)
+  iex> {:ok, mt} = MerkleTree.new(['a', 'b', 'c', 'd'], &MerkleTree.Crypto.sha256/1, 2)
   %MerkleTree{blocks: ['a', 'b', 'c', 'd'], hash_function: &MerkleTree.Crypto.sha256/1,
         root: %MerkleTree.Node{children: [%MerkleTree.Node{children: [%MerkleTree.Node{children: [],
             value: "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"},
