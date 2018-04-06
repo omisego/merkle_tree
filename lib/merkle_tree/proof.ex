@@ -2,15 +2,15 @@ defmodule MerkleTree.Proof do
   @moduledoc """
     Generate and verify merkle proofs
 
-      ## Usage Example
-      iex> proof = MerkleTree.new(~w/a b c d/) |>
-      ...> MerkleTree.Proof.prove(1)
-      %MerkleTree.Proof{hash_function: &MerkleTree.Crypto.sha256/1,
-       hashes: ["d3a0f1c792ccf7f1708d5422696263e35755a86917ea76ef9242bd4a8cf4891a",
-        "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"]}
-      iex> MerkleTree.Proof.proven?({"b", 1}, "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd", proof)
-      true
-
+    ## Usage Example
+    iex> {:ok, tree} = MerkleTree.new(~w/a b c d/, &MerkleTree.Crypto.sha256/1, 2)
+    iex> proof = tree |>
+    ...> MerkleTree.Proof.prove(1)
+    %MerkleTree.Proof{hash_function: &MerkleTree.Crypto.sha256/1,
+     hashes: ["d3a0f1c792ccf7f1708d5422696263e35755a86917ea76ef9242bd4a8cf4891a",
+      "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"]}
+    iex> MerkleTree.Proof.proven?({"b", 1}, "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd", proof)
+    true
   """
   defstruct [:hashes, :hash_function]
 
@@ -84,7 +84,7 @@ defmodule MerkleTree.Proof do
     index_binary
   end
 
-  @spec path_from_binary(binary) :: {binary, binary}
+  @spec path_from_binary(<<_::1, _::_*1>>) :: {0 | 1,bitstring()}
   defp path_from_binary(index_binary) do
     <<path_head::unsigned-big-integer-unit(1)-size(1),
     path_tail::binary-unit(1)>> = index_binary
