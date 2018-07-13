@@ -44,9 +44,9 @@ defmodule MerkleTree do
     Alternatively, you can supply your own hash function that has the spec
     ``(String.t -> String.t)``.
   """
-  @spec new(blocks, hash_function, height) :: {:ok, t} | {:error, atom}
-  def new(blocks, hash_function \\ &MerkleTree.Crypto.sha256/1, height \\ @default_height) do
-    case build(blocks, hash_function, height) do
+  @spec new(blocks, hash_function, height, boolean()) :: {:ok, t} | {:error, atom}
+  def new(blocks, hash_function \\ &MerkleTree.Crypto.sha256/1, height \\ @default_height, hash_leaves \\ true) do
+    case build(blocks, hash_function, hash_leaves, height) do
       {:ok, root} ->
         blocks = blocks |> extend_with_zeroes(height)
         {:ok, %MerkleTree{blocks: blocks, hash_function: hash_function, root: root}}
@@ -64,7 +64,7 @@ defmodule MerkleTree do
   @doc """
     Builds a new binary merkle tree.
   """
-  def build([], hash_function, max_height) do
+  def build([], hash_function, _, max_height) do
     height = 0
     extension_node = %MerkleTree.Node{
       value: @zeroes,
@@ -73,14 +73,15 @@ defmodule MerkleTree do
     }
     {:ok, _build([extension_node], hash_function, height, max_height, extension_node)}
   end
-  def build(blocks, hash_function, max_height) do
+  def build(blocks, hash_function, hash_leaves, max_height) do
     if Enum.count(blocks) > pow(max_height) do
       {:error, :too_many_blocks}
     else
       height = 0
+      leaves_hash_function = if hash_leaves, do: fn b -> hash_function.(b) end, else: &(&1)
       leaves = Enum.map(blocks, fn(block) ->
         %MerkleTree.Node{
-          value: hash_function.(block),
+          value: leaves_hash_function.(block),
           children: [],
           height: height
         }
