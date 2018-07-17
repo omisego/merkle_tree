@@ -46,7 +46,7 @@ defmodule MerkleTree do
   """
   @spec new(blocks, hash_function, height, boolean()) :: {:ok, t} | {:error, atom}
   def new(blocks, hash_function \\ &MerkleTree.Crypto.sha256/1, height \\ @default_height, hash_leaves \\ true) do
-    case build(blocks, hash_function, hash_leaves, height) do
+    case build(blocks, hash_function, height, hash_leaves) do
       {:ok, root} ->
         blocks = blocks |> extend_with_zeroes(height)
         {:ok, %MerkleTree{blocks: blocks, hash_function: hash_function, root: root}}
@@ -64,7 +64,7 @@ defmodule MerkleTree do
   @doc """
     Builds a new binary merkle tree.
   """
-  def build([], hash_function, _, max_height) do
+  def build([], hash_function, max_height, _) do
     height = 0
     extension_node = %MerkleTree.Node{
       value: @zeroes,
@@ -73,7 +73,7 @@ defmodule MerkleTree do
     }
     {:ok, _build([extension_node], hash_function, height, max_height, extension_node)}
   end
-  def build(blocks, hash_function, hash_leaves, max_height) do
+  def build(blocks, hash_function, max_height, hash_leaves) do
     if Enum.count(blocks) > pow(max_height) do
       {:error, :too_many_blocks}
     else
