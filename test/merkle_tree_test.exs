@@ -10,6 +10,13 @@ defmodule MerkleTreeTest do
     assert f.root.value == "5b2441d1eb763fa7e87908d8cd62706dfea2ae058a4edf9053b05ec4c52b42c8"
   end
 
+  test "calculates merkle tree when leaves are pre-hashed" do
+    leaves = ['a', 'b', 'c'] |> Enum.map(&MerkleTree.Crypto.sha256/1)
+
+    {:ok, f} = MerkleTree.new(leaves, &MerkleTree.Crypto.sha256/1, 2, false)
+    assert f.root.value == "5b2441d1eb763fa7e87908d8cd62706dfea2ae058a4edf9053b05ec4c52b42c8"
+  end
+
   test "calculates merkle tree for empty blocks" do
     {:ok, f} = MerkleTree.new([], &MerkleTree.Crypto.sha256/1, 2)
     assert f.root.value == "ade4faf1929c62d0b2c19f9ac9641f8cf009923d09e85cc3e3a560157cc4e0ac"
