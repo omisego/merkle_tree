@@ -6,7 +6,7 @@ defmodule MerkleTree do
   hash of the labels of its child nodes
 
   ## Usage Example
-  iex> tree = MerkleTree.new(["1","2","3"], fn a,b ->"<"<> a<>b <> ">" end, 3, "*")
+  iex> tree = MerkleTree.new(["1","2","3"], fn v ->"<"<>v<>">" end, 3, "*")
   %MerkleTree{
   height: 3,
   root: %MerkleTree.Node{
@@ -56,41 +56,41 @@ defmodule MerkleTree do
     list_binary = Integer.digits(index, 2) |> Enum.reverse()
     list_binary = list_binary ++ List.duplicate(0, length(proof) - length(list_binary))
     list_binary |> Enum.reduce({value, proof}, fn
-      0,{acc, [head|tail]} -> {hash_function.(acc, head), tail}
-      1,{acc, [head|tail]} -> {hash_function.(head, acc), tail}
+      0,{acc, [head|tail]} -> {hash_function.(acc <> head), tail}
+      1,{acc, [head|tail]} -> {hash_function.(head <> acc), tail}
     end) |> elem(0)
   end
 
-  @spec height(list(any)) :: non_neg_integer
+  @spec height(list(binary)) :: non_neg_integer
   defp height(list), do: list |> length |> :math.log2() |> :math.ceil() |> round()
 
-  @spec new(list(any), (any, any -> any)) :: t
+  @spec new(list(binary), (binary -> binary)) :: t
   def new(list, hash_function), do: new(list, hash_function, height(list))
 
-  @spec new(list(any), (any, any -> any), non_neg_integer, any) :: t
+  @spec new(list(binary), (binary -> binary), non_neg_integer, any) :: t
   def new(list_leaf, hash_function, height, default_leaf \\ "") do
     list_leaf = Enum.map(list_leaf, fn elem -> %Node{value: elem, children: nil} end)
 
     {root, default} =
       Enum.reduce(1..height, {list_leaf, default_leaf}, fn
         _, {list, default} ->
-          {step(list, hash_function, default), hash_function.(default, default)}
+          {step(list, hash_function, default), hash_function.(default <> default)}
       end)
 
     %__MODULE__{height: height, root: hd(root ++ [%Node{value: default}])}
   end
 
-  @spec step(list(any), (any, any -> any), any) :: t
+  @spec step(list(binary), (binary -> binary), any) :: t
   defp step(list, hash_function, default_leaf) do
     list
     |> Enum.chunk_every(2)
     |> Enum.map(fn
       [%Node{value: left}, %Node{value: right}] = children ->
-        %Node{value: hash_function.(left, right), children: List.to_tuple(children)}
+        %Node{value: hash_function.(left <> right), children: List.to_tuple(children)}
 
       [%Node{value: leaf} = node] ->
         %Node{
-          value: hash_function.(leaf, default_leaf),
+          value: hash_function.(leaf <> default_leaf),
           children: {node, %Node{value: default_leaf}}
         }
     end)
